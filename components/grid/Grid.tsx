@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useRef } from "react";
-import produce from "immer";
 import {
   generateEmptyGrid,
-  positions,
   gridSize,
   speed,
   generateRandomGrid,
+  produceGrid,
+  produceSwitchCellGrid,
 } from "../utils/gameOfLife.utils";
 
 export default function Grid() {
@@ -17,69 +17,19 @@ export default function Grid() {
   runningRef.current = running;
 
   const runSimulation = useCallback(() => {
-    if (!runningRef.current) {
-      return;
-    }
+    if (!runningRef.current) return;
     setGrid((g) => {
-      return produce(g, (gridCopy) => {
-        for (let i = 0; i < gridSize; i++) {
-          for (let k = 0; k < gridSize; k++) {
-            let neighbors = 0;
-            positions.forEach(([x, y]) => {
-              const newI = i + x;
-              const newK = k + y;
-              if (
-                newI >= 0 &&
-                newI < gridSize &&
-                newK >= 0 &&
-                newK < gridSize
-              ) {
-                neighbors += g[newI][newK];
-              }
-            });
-            if (neighbors < 2 || neighbors > 3) {
-              gridCopy[i][k] = 0;
-            } else if (g[i][k] === 0 && neighbors === 3) {
-              gridCopy[i][k] = 1;
-            }
-          }
-        }
-      });
+      return produceGrid(g);
     });
     setTimeout(runSimulation, speed);
   }, []);
 
-  // Used to step the grid through the lifecycle one generation at a time
   const stepGrid = useCallback(() => {
     if (runningRef.current) {
       setRunning(false);
     }
     setGrid((g) => {
-      return produce(g, (gridCopy) => {
-        for (let i = 0; i < gridSize; i++) {
-          for (let k = 0; k < gridSize; k++) {
-            let neighbors = 0;
-            positions.forEach(([x, y]) => {
-              const newI = i + x;
-              const newK = k + y;
-              if (
-                newI >= 0 &&
-                newI < gridSize &&
-                newK >= 0 &&
-                newK < gridSize
-              ) {
-                neighbors += g[newI][newK];
-              }
-            });
-
-            if (neighbors < 2 || neighbors > 3) {
-              gridCopy[i][k] = 0;
-            } else if (g[i][k] === 0 && neighbors === 3) {
-              gridCopy[i][k] = 1;
-            }
-          }
-        }
-      });
+      return produceGrid(g);
     });
   }, []);
 
@@ -97,9 +47,7 @@ export default function Grid() {
             <div
               key={`${i}-${k}`}
               onClick={() => {
-                const newGrid = produce(grid, (gridCopy) => {
-                  gridCopy[i][k] = grid[i][k] ? 0 : 1;
-                });
+                const newGrid = produceSwitchCellGrid(grid, i, k);
                 setGrid(newGrid);
               }}
               style={{
